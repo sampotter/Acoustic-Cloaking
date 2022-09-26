@@ -1,3 +1,9 @@
+import colorcet as cc
+import matplotlib.animation as animation
+import matplotlib.pyplot as plt
+
+plt.ion()
+
 import meshpy.triangle as triangle
 import numpy as np
 import numpy.linalg as la
@@ -32,11 +38,11 @@ mesh = triangle.build(info, refinement_func=needs_refinement)
 
 mesh_points = np.array(mesh.points)
 mesh_tris = np.array(mesh.elements)
-print(mesh_points)
-print(mesh_tris)
-print(np.array(mesh.neighbors))
 
 
+# plt.figure()
+# plt.triplot(*mesh_points.T, triangles=mesh_tris)
+# plt.show()
 
 def find_triangle(x):
     return [item for item in mesh_tris if x in mesh_tris]
@@ -106,23 +112,43 @@ source = 0
 u[source] = 0
 Q = []
 put_in_list(inlist, Q, find_adjacent(source))
-## update
-while len(Q) > 0:
-    temp = Q.pop(0)
-    p = u[temp]
-    q = solve_eikonal(temp, u, speed)
-    u[temp] = q
-    print(len(Q))
-    if np.abs(p - q) < epsilon:
-        neighbors = find_adjacent(temp)
-        for item in neighbors:
-            if inlist[item] == 0:
-                p = u[item]
-                q = solve_eikonal(item, u, speed)
-                if p > q:
-                    u[item] = q
-                    put_in_list(inlist, Q, [item])
-        inlist[temp] = 0
-    else:
-        put_in_list(inlist, Q, [temp])
-print(u)
+
+plt.figure(figsize=(11, 9))
+
+def plot(_):
+    plt.gcf().clear()
+    plt.triplot(*mesh_points.T, triangles=mesh_tris, c='k',
+                linewidth=0.5, zorder=1)
+    mask = np.isfinite(u)
+    plt.scatter(*mesh_points[mask].T, s=30, c=u[mask], edgecolors=['k'],
+                cmap=cc.cm.rainbow, zorder=2)
+    plt.colorbar()
+    plt.xlabel('$x$')
+    plt.ylabel('$y$')
+    plt.gca().set_aspect('equal')
+    plt.tight_layout()
+
+def run():
+    i = 0
+    while len(Q) > 0:
+        temp = Q.pop(0)
+        p = u[temp]
+        q = solve_eikonal(temp, u, speed)
+        u[temp] = q
+        if np.abs(p - q) < epsilon:
+            neighbors = find_adjacent(temp)
+            for item in neighbors:
+                if inlist[item] == 0:
+                    p = u[item]
+                    q = solve_eikonal(item, u, speed)
+                    if p > q:
+                        u[item] = q
+                        put_in_list(inlist, Q, [item])
+            inlist[temp] = 0
+        else:
+            put_in_list(inlist, Q, [temp])
+        yield i
+        i += 1
+
+ani = animation.FuncAnimation(plt.gcf(), plot, frames=run())
+plt.show()
