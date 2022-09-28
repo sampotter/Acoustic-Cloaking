@@ -45,7 +45,11 @@ mesh_tris = np.array(mesh.elements)
 # plt.show()
 
 def find_triangle(x):
-    return [item for item in mesh_tris if x in mesh_tris]
+    adj_tris = []
+    for item in mesh_tris:
+        if x in item:
+            adj_tris.append(item)
+    return adj_tris
 
 def find_adjacent(x):
     adj = [x]
